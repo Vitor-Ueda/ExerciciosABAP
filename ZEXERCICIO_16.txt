@@ -1,0 +1,29 @@
+REPORT ZEXERCICIO_16.
+
+
+PARAMETER: p_valor1 TYPE i,
+           p_valor2 TYPE i.
+
+PERFORM recebe_valores.
+
+FORM recebe_valores.
+
+  DATA: char_valor1(10) TYPE c,
+        qtd_char1 TYPE i,
+        quantidade_zero TYPE c.
+
+  char_valor1 = p_valor1.
+  CONDENSE char_valor1 NO-GAPS.
+
+  qtd_char1 = strlen( char_valor1 ).
+
+  WHILE qtd_char1 <  p_valor2.
+    WRITE: '0'.
+    ADD 1 TO qtd_char1.
+  ENDWHILE.
+
+  char_valor1 = char_valor1(p_valor2).
+
+  WRITE: char_valor1.
+
+ENDFORM.

@@ -1,0 +1,21 @@
+REPORT zexercicio_06.
+
+DATA: tb_intern TYPE TABLE OF usr04,
+      tb_linha TYPE usr04.
+
+"Chama função
+PERFORM ex_relatorio.
+
+"Função
+FORM ex_relatorio.
+  SELECT *
+    FROM usr04
+    INTO TABLE tb_intern
+    WHERE bname EQ 'BLEITE.P' OR
+          bname EQ 'JNICOLAU.P'.
+  IF sy-subrc EQ 0.
+    LOOP AT tb_intern INTO tb_linha.
+      WRITE: tb_linha-bname, tb_linha-modbe, /.
+    ENDLOOP.
+  ENDIF.
+ENDFORM.

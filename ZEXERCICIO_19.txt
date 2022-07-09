@@ -1,0 +1,23 @@
+REPORT ZEXERCICIO_19.
+
+DATA: teste TYPE i.
+
+SELECT-OPTIONS: s_numero FOR teste NO-EXTENSION.
+
+
+PERFORM calcular.
+
+FORM calcular.
+
+  DATA: contador TYPE i,
+        result TYPE i.
+
+  contador = s_numero-low.
+
+  WHILE contador <= s_numero-high.
+    result = contador * 3.
+    ADD 1 TO contador.
+    WRITE: ',', result.
+  ENDWHILE.
+
+ENDFORM.

@@ -1,0 +1,42 @@
+REPORT ZEXERCICIO_02.
+
+DATA: palavra1(15) TYPE c,
+      palavra2(10) TYPE c,
+      data(10) TYPE i,
+      mes(20) TYPE c,
+      result(50) TYPE c.
+
+palavra1 = 'O mês atual é: '.
+palavra2 = 'Bem vindos.'.
+data = sy-datum+4(2).
+
+CASE data.
+  WHEN '01'.
+    mes = 'January'.
+  WHEN '02'.
+    mes = 'February'.
+  WHEN '03'.
+    mes = 'March'.
+  WHEN '04'.
+    mes = 'April'.
+  WHEN '05'.
+    mes = 'May'.
+  WHEN '06'.
+    mes = 'June'.
+  WHEN '07'.
+    mes = 'July'.
+  WHEN '08'.
+    mes = 'August'.
+  WHEN '09'.
+    mes = 'September'.
+  WHEN '10'.
+    mes = 'Octuber'.
+  WHEN '11'.
+    mes = 'November'.
+  WHEN '12'.
+    mes = 'December'.
+ENDCASE.
+
+CONCATENATE palavra1 mes palavra2 INTO result SEPARATED BY space.
+
+WRITE result.

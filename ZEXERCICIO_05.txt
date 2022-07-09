@@ -1,0 +1,32 @@
+REPORT zexercicio_05a.
+
+DATA: cont_nome TYPE i,
+      cont_caracter TYPE i,
+      cont_vogal TYPE i,
+      cont_vogal_char TYPE c,
+      conc(50) TYPE c.
+
+TABLES vbap.
+
+PARAMETER p_cad(20) TYPE c.
+
+cont_nome = strlen( p_cad ).
+
+WHILE cont_caracter <= cont_nome.
+
+  IF p_cad+cont_caracter(1) EQ 'A' OR p_cad+cont_caracter(1) EQ 'a' OR p_cad+cont_caracter(1) EQ 'E' OR p_cad+cont_caracter(1)
+    EQ 'e' OR p_cad+cont_caracter(1) EQ 'I' OR p_cad+cont_caracter(1) EQ 'i' OR p_cad+cont_caracter(1) EQ 'O' OR p_cad+cont_caracter(1) EQ 'o' OR p_cad+cont_caracter(1) EQ 'U' OR p_cad+cont_caracter(1) EQ 'u'.
+    ADD 1 TO cont_vogal.
+  ENDIF.
+
+  ADD 1 TO cont_caracter.  "Comando para fazer cont_caracter = cont_caracter + 1.
+
+ENDWHILE.
+
+cont_vogal_char = cont_vogal.
+
+CONCATENATE 'A quantidade de vogais no nome' p_cad ' é:' cont_vogal_char INTO conc SEPARATED BY space.
+
+"conc = 'A quantidade de vogais no nome' && p_cad &&"
+
+WRITE conc.

@@ -1,0 +1,38 @@
+REPORT zexercicio_11.
+
+TYPES: BEGIN OF ty_cadastro,
+        id TYPE i,
+        nome(20) TYPE c,
+        cpf(20) TYPE c,
+        telefone(20) TYPE c,
+        v_conta TYPE p DECIMALS 2,
+       END OF ty_cadastro.
+
+
+PERFORM criando_tabela.
+
+FORM criando_tabela.
+
+  DATA: ti_cadastros TYPE TABLE OF ty_cadastro,
+        wa_cadastro TYPE ty_cadastro.
+
+  wa_cadastro-id = 1.
+  wa_cadastro-nome = 'Vitor'.
+  wa_cadastro-cpf = '4735931807'.
+  wa_cadastro-telefone = '14997311947'.
+  wa_cadastro-v_conta = '2000.00'.
+  APPEND wa_cadastro TO ti_cadastros.
+
+  wa_cadastro-id = 2.
+  wa_cadastro-nome = 'Cláudio'.
+  wa_cadastro-cpf = '55533320990'.
+  wa_cadastro-telefone = '14998987067'.
+  wa_cadastro-v_conta = '5000.00'.
+  APPEND wa_cadastro TO ti_cadastros.
+
+
+  LOOP AT ti_cadastros INTO wa_cadastro.
+    WRITE:wa_cadastro-id,'|', wa_cadastro-nome,'|', wa_cadastro-cpf,'|', wa_cadastro-telefone,'|', wa_cadastro-v_conta,'|',  sy-uline.
+  ENDLOOP.
+
+ENDFORM.

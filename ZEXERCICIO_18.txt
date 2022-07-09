@@ -1,0 +1,25 @@
+REPORT ZEXERCICIO_18.
+
+PARAMETER: p_string TYPE string,
+           p_numero TYPE i.
+
+PERFORM imprimi_string.
+
+FORM imprimi_string.
+
+  DATA: contador TYPE i VALUE 1,
+        trans_char(20) TYPE c.
+
+  trans_char = p_string.
+
+  IF p_numero <= 20.
+    WHILE contador < p_numero.
+      ADD 1 TO contador.
+      WRITE: trans_char(contador), /.
+    ENDWHILE.
+    WRITE: 'A string digitada foi:', p_string, /,
+           'o número digitado foi:', p_numero.
+  ELSE.
+    WRITE: 'Número não aceito, por favor digite um número menor ou igual a 20'.
+  ENDIF.
+ENDFORM.

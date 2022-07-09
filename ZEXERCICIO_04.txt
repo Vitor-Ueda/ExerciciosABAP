@@ -1,0 +1,46 @@
+REPORT ZEXERCICIO_04.
+
+DATA: datastamp TYPE timestamp.
+
+DATA: hora_Greenwich TYPE t,
+      hora_Brasilia TYPE t,
+      hora_Delhi TYPE t,
+      hora_Chile TYPE t,
+      hora_Iran TYPE t,
+      hora_Alasca TYPE t.
+
+DATA: fuso_Brasilia TYPE tzone value 'BRAZIL',
+      fuso_Delhi TYPE tzone value 'INDIA',
+      fuso_Greenwich TYPE tzone value 'GMTUK',
+      fuso_Chile TYPE tzone value 'CHILE',
+      fuso_Iran TYPE tzone value'IRAN',
+      fuso_Alasca TYPE tzone value 'ALA'.
+
+
+      GET TIME STAMP FIELD datastamp.
+
+      CONVERT TIME STAMP datastamp TIME ZONE fuso_Brasilia
+      INTO TIME hora_Brasilia.
+
+      CONVERT TIME STAMP datastamp TIME ZONE fuso_Greenwich
+      INTO TIME hora_Greenwich.
+
+      CONVERT TIME STAMP datastamp TIME ZONE fuso_Delhi
+      INTO TIME hora_Delhi.
+
+      CONVERT TIME STAMP datastamp TIME ZONE fuso_Chile
+      INTO TIME hora_Chile.
+
+      CONVERT TIME STAMP datastamp TIME ZONE fuso_Iran
+      INTO TIME hora_Iran.
+
+      CONVERT TIME STAMP datastamp TIME ZONE fuso_Alasca
+      INTO TIME hora_Alasca.
+
+
+WRITE: 'Horário de Brasilia: ', hora_Brasilia USING EDIT MASK '__:__',
+       /'Horário de Greenwich: ', hora_Greenwich USING EDIT MASK '__:__',
+       /'Horário de Delhi: ', hora_Delhi USING EDIT MASK '__:__',
+       /'Horário de Chile: ', hora_Chile USING EDIT MASK '__:__',
+       /'Horário de Iran: ', hora_Iran USING EDIT MASK '__:__',
+       /'Horário de Alasca: ', hora_Alasca USING EDIT MASK '__:__'.

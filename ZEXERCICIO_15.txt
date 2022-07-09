@@ -1,0 +1,82 @@
+REPORT zexercicio_15.
+
+TYPES: BEGIN OF ty_registro_venda,
+        nome_produto TYPE string,
+        qtd_produto TYPE n,
+        preco_produto TYPE string,
+        forma_pagamento TYPE string,
+       END OF ty_registro_venda.
+
+PERFORM reg_vendas.
+
+FORM reg_vendas.
+
+  DATA: ti_registro_venda TYPE TABLE OF ty_registro_venda,
+        wa_registro_venda TYPE ty_registro_venda,
+        cont_linha TYPE i,
+        cont_caracter TYPE i,
+        cont_caracter_result TYPE i,
+        caracter_branco TYPE string VALUE '          ',
+        cont_campo_branco TYPE i.
+
+  wa_registro_venda-nome_produto = 'Teclado Mecanico'.
+  cont_caracter = strlen( wa_registro_venda-nome_produto ).
+  cont_caracter_result = cont_caracter_result + cont_caracter.
+
+
+  wa_registro_venda-qtd_produto = '1'.
+  cont_caracter = strlen( wa_registro_venda-qtd_produto ).
+  cont_caracter_result = cont_caracter_result + cont_caracter.
+
+
+  wa_registro_venda-preco_produto = '239.90'.
+  cont_caracter = strlen( wa_registro_venda-preco_produto ).
+  cont_caracter_result = cont_caracter_result + cont_caracter.
+
+
+  wa_registro_venda-forma_pagamento = ''.
+  cont_caracter = strlen( wa_registro_venda-forma_pagamento ).
+  cont_caracter_result = cont_caracter_result + cont_caracter.
+  APPEND wa_registro_venda TO ti_registro_venda.
+  ADD 1 TO cont_linha.
+
+  LOOP AT ti_registro_venda INTO wa_registro_venda.
+
+    IF wa_registro_venda-nome_produto EQ ''.
+      ADD 1 TO cont_campo_branco.
+    ENDIF.
+    IF wa_registro_venda-qtd_produto EQ ''.
+      ADD 1 TO cont_campo_branco.
+    ENDIF.
+    IF wa_registro_venda-preco_produto EQ ''.
+      ADD 1 TO cont_campo_branco.
+    ENDIF.
+    IF wa_registro_venda-forma_pagamento EQ ''.
+      ADD 1 TO cont_campo_branco.
+    ENDIF.
+
+
+    WRITE: wa_registro_venda-nome_produto, '|',
+           wa_registro_venda-qtd_produto, '|',
+           wa_registro_venda-preco_produto, '|',
+           wa_registro_venda-forma_pagamento, '|', sy-uline.
+
+    SKIP.
+
+    WRITE:'Linhas [', cont_linha,'] =>', caracter_branco, cont_campo_branco, '| Campos em branco:'.
+
+    IF wa_registro_venda-nome_produto EQ ''.
+      WRITE: 'Nome do produto'.
+    ENDIF.
+    IF wa_registro_venda-qtd_produto EQ ''.
+      WRITE: 'Quantidade de produtos comprados'.
+    ENDIF.
+    IF wa_registro_venda-preco_produto EQ ''.
+      WRITE: 'Preço do produto'.
+    ENDIF.
+    IF wa_registro_venda-forma_pagamento EQ ''.
+      WRITE: 'Forma de pagamento'.
+    ENDIF.
+
+  ENDLOOP.
+ENDFORM.

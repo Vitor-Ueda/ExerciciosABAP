@@ -1,0 +1,622 @@
+
+REPORT zexercicios_relatorio_03.
+
+TABLES: vbrk, vbrp, vbak, kna1.
+
+TYPES: BEGIN OF ty_vbrk,
+        vbeln TYPE vbrk-vbeln,
+        fkdat TYPE vbrk-fkdat,
+        kunrg TYPE vbrk-kunrg,
+       END OF ty_vbrk,
+
+      BEGIN OF ty_vbrp,
+        vbeln TYPE vbrp-vbeln,
+        posnr TYPE vbrp-posnr,
+        matnr TYPE vbrp-matnr,
+        fkimg TYPE vbrp-fkimg,
+        vrkme TYPE vbrp-vrkme,
+        netwr TYPE vbrp-netwr,
+        aubel TYPE vbrp-aubel,
+      END OF ty_vbrp,
+
+      BEGIN OF ty_vbak,
+        vbeln TYPE vbak-vbeln,
+      END OF ty_vbak,
+
+      BEGIN OF ty_kna1,
+        kunnr TYPE kna1-kunnr,
+        name1 TYPE kna1-name1,
+      END OF ty_kna1,
+
+      BEGIN OF ty_makt,
+        matnr TYPE makt-matnr,
+        maktx TYPE makt-maktx,
+      END OF ty_makt,
+
+      BEGIN OF ty_saida,
+        vbeln TYPE vbrk-vbeln,
+        posnr TYPE vbrp-posnr,
+        kunrg_e_name1(15) TYPE c,
+        fkdat TYPE vbrk-fkdat,
+        matnr_e_maktx(60) TYPE c,
+        fkimg TYPE vbrp-fkimg,
+        vrkme TYPE vbrp-vrkme,
+        netwr TYPE vbrp-netwr,
+        aubel TYPE vbrp-aubel,
+        cellcolor TYPE lvc_t_scol,
+        status(4) TYPE c,
+      END OF ty_saida.
+
+
+DATA: t_vbrk TYPE TABLE OF ty_vbrk,
+      t_vbrp TYPE TABLE OF ty_vbrp,
+      t_vbak TYPE TABLE OF ty_vbak,
+      t_kna1 TYPE TABLE OF ty_kna1,
+      t_makt TYPE TABLE OF ty_makt,
+      t_saida TYPE TABLE OF ty_saida.
+
+
+DATA: w_vbrk TYPE ty_vbrk,
+      w_vbrp TYPE ty_vbrp,
+      w_vbak TYPE ty_vbak,
+      w_kna1 TYPE ty_kna1,
+      w_makt TYPE ty_makt,
+      w_saida TYPE ty_saida.
+
+DATA: t_listheader TYPE TABLE OF slis_listheader,
+      t_fieldcat TYPE TABLE OF  slis_fieldcat_alv,
+      t_sort TYPE slis_t_sortinfo_alv,         "QUEBRA DE CAMPO"
+
+      w_listheader TYPE slis_listheader,
+      w_fieldcat TYPE  slis_fieldcat_alv,
+      w_layout TYPE  slis_layout_alv,
+      w_cellcolor TYPE lvc_s_scol,             "TROCA COR CAMPO"
+      w_sort TYPE slis_sortinfo_alv.           "QUEBRA DE CAMPO"
+
+
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE text-001.
+
+SELECT-OPTIONS s_vbeln FOR w_vbrk-vbeln.
+SELECT-OPTIONS s_fkdat FOR w_vbrk-fkdat.
+
+PARAMETER p_kunrg TYPE vbrk-kunrg.
+
+SELECTION-SCREEN END OF BLOCK b1.
+
+PERFORM: selecao_dados_tabela,
+         passando_dados_workarea,
+         montando_alv,
+         preencher_tabela_sort, "FUNÇÃO PARA QUEBRAR LINHA E INCLUIR CAMPO SOMATORIO"
+         executa_alv.
+
+
+
+FORM selecao_dados_tabela.
+
+  SELECT vbeln fkdat kunrg
+    FROM vbrk
+    INTO TABLE t_vbrk
+    WHERE vbeln IN s_vbeln AND fkart = 'F2' AND fkdat IN s_fkdat AND kunrg = p_kunrg.
+
+  SELECT vbeln posnr matnr fkimg
+    FROM vbrp
+    INTO TABLE t_vbrp
+    FOR ALL ENTRIES IN t_vbrk
+    WHERE vbeln = t_vbrk-vbeln.
+
+  SELECT vbeln
+    FROM vbak
+    INTO TABLE t_vbak
+    FOR ALL ENTRIES IN t_vbrp
+    WHERE vbeln = t_vbrp-aubel.
+
+  SELECT kunnr name1
+    FROM kna1
+    INTO TABLE t_kna1
+    FOR ALL ENTRIES IN t_vbrk
+    WHERE kunnr = t_vbrk-kunrg.
+
+  SELECT matnr maktx
+    FROM makt
+    INTO TABLE t_makt
+    FOR ALL ENTRIES IN t_vbrp
+    WHERE matnr = t_vbrp-matnr AND spras = sy-langu.
+
+ENDFORM.
+
+FORM passando_dados_workarea.
+  LOOP AT t_vbrp INTO w_vbrp.
+    READ TABLE t_vbrk INTO w_vbrk WITH KEY vbeln = w_vbrp-vbeln.
+    IF sy-subrc EQ 0.
+      READ TABLE t_vbak INTO w_vbak WITH KEY vbeln = w_vbrp-aubel.
+      IF sy-subrc EQ 0.
+        READ TABLE t_kna1 INTO w_kna1 WITH KEY kunnr = w_vbrk-kunrg.
+        IF sy-subrc EQ 0.
+          READ TABLE t_makt INTO w_makt WITH KEY matnr = w_vbrp-matnr.
+          IF sy-subrc EQ 0.
+            w_saida-vbeln = vbrk-vbeln.
+            w_saida-posnr = vbrp-posnr.
+            CONCATENATE w_vbrk-kunrg w_kna1-name1 INTO w_saida-kunrg_e_name1 SEPARATED BY '-'.
+            w_saida-fkdat = vbrk-fkdat.
+            CONCATENATE w_vbrp-matnr w_makt-maktx INTO w_saida-matnr_e_maktx SEPARATED BY '-'.
+            w_saida-fkimg = vbrp-fkimg.
+            w_saida-vrkme = vbrp-vrkme.
+            w_saida-netwr = vbrp-netwr.
+            w_saida-aubel = vbrp-aubel.
+            APPEND w_saida TO t_saida.
+          ENDIF.
+        ENDIF.
+      ENDIF.
+    ENDIF.
+  ENDLOOP.
+
+  w_saida-vbeln = '0000000002'.
+  w_saida-posnr = '000010'.
+  w_saida-kunrg_e_name1 = 'Vitor Ueda'.
+  w_saida-fkdat = '20211020'.
+  w_saida-matnr_e_maktx = 'Escova de Dentes - Vermelha'.
+  w_saida-fkimg = 5. "
+  w_saida-vrkme = 5.
+  w_saida-netwr = 900.
+  w_saida-aubel = '000023239'.
+  APPEND w_saida TO t_saida.
+
+  w_saida-vbeln = '0000000004'.
+  w_saida-posnr = '000020'.
+  w_saida-kunrg_e_name1 = 'Vitor Ueda'.
+  w_saida-fkdat = '20211022'.
+  w_saida-matnr_e_maktx = 'Creme Dental - Azul'.
+  w_saida-fkimg = 30. "
+  w_saida-vrkme = 5.
+  w_saida-netwr = 1200. "
+  w_saida-aubel = '000023239'.
+  APPEND w_saida TO t_saida.
+
+  w_saida-vbeln = '0000000007'.
+  w_saida-posnr = '000020'.
+  w_saida-kunrg_e_name1 = 'Neymar Junior'.
+  w_saida-fkdat = '20211023'.
+  w_saida-matnr_e_maktx = 'Shampoo - Cabelo Liso'.
+  w_saida-fkimg = 50. "
+  w_saida-vrkme = 5.
+  w_saida-netwr = 500. "
+  w_saida-aubel = '000033333'.
+  APPEND w_saida TO t_saida.
+
+
+  LOOP AT t_saida INTO w_saida.
+    IF w_saida-fkimg < 10.
+      w_cellcolor-fname = 'FKIMG'.
+      w_cellcolor-color-col = '6'.
+      w_cellcolor-color-int = '1'.
+      w_cellcolor-color-inv = '0'.
+    ELSE.
+      w_cellcolor-fname = 'FKIMG'.
+      w_cellcolor-color-col = '5'.
+      w_cellcolor-color-int = '1'.
+      w_cellcolor-color-inv = '0'.
+    ENDIF.
+    APPEND w_cellcolor TO w_saida-cellcolor.
+    MODIFY t_saida FROM w_saida TRANSPORTING cellcolor.
+  ENDLOOP.
+
+  LOOP AT t_saida INTO w_saida.
+    IF w_saida-netwr < 1000.
+      w_cellcolor-fname = 'NETWR'.
+      w_cellcolor-color-col = '6'.
+      w_cellcolor-color-int = '1'.
+      w_cellcolor-color-inv = '0'.
+    ELSE.
+      w_cellcolor-fname = 'NETWR'.
+      w_cellcolor-color-col = '5'.
+      w_cellcolor-color-int = '1'.
+      w_cellcolor-color-inv = '0'.
+    ENDIF.
+    APPEND w_cellcolor TO w_saida-cellcolor.
+    MODIFY t_saida FROM w_saida TRANSPORTING cellcolor.
+  ENDLOOP.
+
+ENDFORM.
+
+FORM montando_alv.
+
+  w_fieldcat-hotspot = 'X'.
+  w_fieldcat-fieldname = 'VBELN'.
+  w_fieldcat-tabname = 'T_SAIDA'.
+  w_fieldcat-ref_fieldname = 'VBELN'.
+  w_fieldcat-ref_tabname = 'VBRK'.
+  APPEND w_fieldcat TO t_fieldcat.
+  CLEAR w_fieldcat.
+
+  w_fieldcat-fieldname = 'POSNR'.
+  w_fieldcat-tabname = 'T_SAIDA'.
+  w_fieldcat-ref_fieldname = 'POSNR'.
+  w_fieldcat-ref_tabname = 'VBRP'.
+  APPEND w_fieldcat TO t_fieldcat.
+  CLEAR w_fieldcat.
+
+  w_fieldcat-seltext_l = 'Payer - Nome'.
+  w_fieldcat-fieldname = 'KUNRG_E_NAME1'.
+  w_fieldcat-tabname = 'T_SAIDA'.
+  w_fieldcat-ref_fieldname = 'KUNRG_E_NAME1'.
+  w_fieldcat-ref_tabname = 'T_SAIDA'.
+  APPEND w_fieldcat TO t_fieldcat.
+  CLEAR w_fieldcat.
+
+  w_fieldcat-fieldname = 'FKDAT'.
+  w_fieldcat-tabname = 'T_SAIDA'.
+  w_fieldcat-ref_fieldname = 'FKDAT'.
+  w_fieldcat-ref_tabname = 'VBRK'.
+  APPEND w_fieldcat TO t_fieldcat.
+  CLEAR w_fieldcat.
+
+  w_fieldcat-seltext_l = 'Product - Desc.'.
+  w_fieldcat-fieldname = 'MATNR_E_MAKTX'.
+  w_fieldcat-tabname = 'T_SAIDA'.
+  w_fieldcat-ref_fieldname = 'MATNR_E_MAKTX'.
+  w_fieldcat-ref_tabname = 'T_SAIDA'.
+  APPEND w_fieldcat TO t_fieldcat.
+  CLEAR w_fieldcat.
+
+  w_fieldcat-do_sum = 'X'.
+  w_fieldcat-emphasize = 'X'.           "FUNÇÃO PARA COLORIR OS CAMPOS"
+  w_fieldcat-fieldname = 'FKIMG'.
+  w_fieldcat-tabname = 'T_SAIDA'.
+  w_fieldcat-ref_fieldname = 'FKIMG'.
+  w_fieldcat-ref_tabname = 'VBRP'.
+  APPEND w_fieldcat TO t_fieldcat.
+  CLEAR w_fieldcat.
+
+  w_fieldcat-fieldname = 'VRKME'.
+  w_fieldcat-tabname = 'T_SAIDA'.
+  w_fieldcat-ref_fieldname = 'VRKME'.
+  w_fieldcat-ref_tabname = 'VBRP'.
+  APPEND w_fieldcat TO t_fieldcat.
+  CLEAR w_fieldcat.
+
+  w_fieldcat-do_sum = 'X'.             "SOMATORIA TOTAL"
+  w_fieldcat-emphasize = 'X'.
+  w_fieldcat-fieldname = 'NETWR'.
+  w_fieldcat-tabname = 'T_SAIDA'.
+  w_fieldcat-ref_fieldname = 'NETWR'.
+  w_fieldcat-ref_tabname = 'VBRP'.
+  APPEND w_fieldcat TO t_fieldcat.
+  CLEAR w_fieldcat.
+
+  w_fieldcat-hotspot = 'X'.
+  w_fieldcat-fieldname = 'AUBEL'.
+  w_fieldcat-tabname = 'T_SAIDA'.
+  w_fieldcat-ref_fieldname = 'AUBEL'.
+  w_fieldcat-ref_tabname = 'VBRP'.
+  APPEND w_fieldcat TO t_fieldcat.
+  CLEAR w_fieldcat.
+
+  w_fieldcat-icon = 'X'.
+  w_fieldcat-seltext_l = 'Status'.
+  w_fieldcat-fieldname = 'STATUS'.
+  w_fieldcat-tabname = 'T_SAIDA'.
+  w_fieldcat-ref_fieldname = 'STATUS'.
+  w_fieldcat-ref_tabname = 'T_SAIDA'.
+  APPEND w_fieldcat TO t_fieldcat.
+  CLEAR w_fieldcat.
+
+ENDFORM.
+
+FORM top_of_page.
+
+  DATA: DATA(10) TYPE c,
+        hora(10) TYPE c.
+
+  WRITE: sy-datum USING EDIT MASK ' __/__/____' TO data.
+  WRITE: sy-uzeit USING EDIT MASK ' __:__:__' TO hora.
+
+  CLEAR t_listheader.
+  CLEAR w_listheader.
+
+  w_listheader-typ = 'H'.
+  w_listheader-info = 'Relatório de Faturas por Pagador'.
+  APPEND w_listheader TO t_listheader.
+
+  w_listheader-typ = 'S'.
+  w_listheader-info = 'DATA: ' && data.
+  APPEND w_listheader TO t_listheader.
+
+  w_listheader-info = space.
+  APPEND w_listheader TO t_listheader.
+
+  w_listheader-typ = 'S'.
+  w_listheader-info = 'HORA: ' && hora.
+  APPEND w_listheader TO t_listheader.
+
+  CALL FUNCTION 'REUSE_ALV_COMMENTARY_WRITE'
+    EXPORTING
+      it_list_commentary = t_listheader.
+
+ENDFORM.
+
+FORM user_command USING r_ucomm LIKE sy-ucomm rs_selfield TYPE slis_selfield.
+
+  CASE r_ucomm.
+    WHEN '&IC1'.
+      IF rs_selfield-fieldname = 'AUBEL'.
+        SET PARAMETER ID 'AUN' FIELD rs_selfield-value.
+        CLEAR w_saida.
+        READ TABLE t_saida INTO w_saida INDEX rs_selfield-tabindex.
+        CALL TRANSACTION 'VA03' AND SKIP FIRST SCREEN.
+      ENDIF.
+
+      IF rs_selfield-fieldname = 'VBELN'.
+        SET PARAMETER ID 'VF' FIELD rs_selfield-value.
+        CLEAR w_saida.
+        READ TABLE t_saida INTO w_saida INDEX rs_selfield-tabindex.
+        CALL TRANSACTION 'VF03' AND SKIP FIRST SCREEN.
+      ENDIF.
+
+
+    WHEN 'CANCEL' OR 'EXIT'.
+      LEAVE PROGRAM.
+
+    WHEN 'ARQUIVOTXT'.
+      PERFORM botao_txt.
+
+    WHEN 'ARQUIVOCSV'.
+      PERFORM botao_csv.
+
+    WHEN 'REGISTRAR'.
+      PERFORM botao_registrar.
+
+  ENDCASE.
+
+  rs_selfield-refresh = 'X'.
+
+ENDFORM.
+
+FORM botao_txt.
+
+  TYPES: truxs_t_text_data(4096) TYPE c OCCURS 0.
+
+  DATA: t_txt TYPE truxs_t_text_data,
+        w_txt LIKE LINE OF t_txt,
+        v_arquivo TYPE string,
+        var_fkimg_aux(13) TYPE c,
+        var_netwr_aux(21) TYPE c.
+
+  var_fkimg_aux = w_saida-fkimg.
+  var_netwr_aux = w_saida-netwr.
+
+  LOOP AT t_saida INTO w_saida.
+
+    CONCATENATE w_saida-vbeln
+                w_saida-posnr
+                w_saida-kunrg_e_name1
+                w_saida-fkdat
+                w_saida-matnr_e_maktx
+                var_fkimg_aux
+                w_saida-vrkme
+                var_netwr_aux
+                w_saida-aubel INTO w_txt SEPARATED BY ' | '.
+
+    APPEND w_txt TO t_txt.
+  ENDLOOP.
+
+  v_arquivo = 'C:\Users\Vitor Ueda\Downloads\ArquivoEx01.txt'.
+
+  CALL FUNCTION 'GUI_DOWNLOAD'
+    EXPORTING
+      filename                = v_arquivo
+      filetype                = 'ASC'
+    TABLES
+      data_tab                = t_txt
+    EXCEPTIONS
+      file_write_error        = 1
+      no_batch                = 2
+      gui_refuse_filetransfer = 3
+      invalid_type            = 4
+      no_authority            = 5
+      unknown_error           = 6
+      header_not_allowed      = 7
+      separator_not_allowed   = 8
+      filesize_not_allowed    = 9
+      header_too_long         = 10
+      dp_error_create         = 11
+      dp_error_send           = 12
+      dp_error_write          = 13
+      unknown_dp_error        = 14
+      access_denied           = 15
+      dp_out_of_memory        = 16
+      disk_full               = 17
+      dp_timeout              = 18
+      file_not_found          = 19
+      dataprovider_exception  = 20
+      control_flush_error     = 21
+      OTHERS                  = 22.
+  IF sy-subrc EQ 0.
+    MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+    WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+  ENDIF.
+
+  MESSAGE s208(00) WITH 'ARQUIVO TXT EXPORTADO COM SUCESSO'.
+
+
+ENDFORM.
+
+FORM botao_csv.
+
+  TYPES: truxs_t_text_data(4096) TYPE c OCCURS 0.
+
+  DATA: t_csv TYPE truxs_t_text_data,
+        w_csv LIKE LINE OF t_csv,
+        v_arquivo TYPE string,
+        var_fkimg_aux(13) TYPE c,
+        var_netwr_aux(21) TYPE c.
+
+  var_fkimg_aux = w_saida-fkimg.
+  var_netwr_aux = w_saida-netwr.
+
+  LOOP AT t_saida INTO w_saida.
+
+    CONCATENATE w_saida-vbeln
+                w_saida-posnr
+                w_saida-kunrg_e_name1
+                w_saida-fkdat
+                w_saida-matnr_e_maktx
+                var_fkimg_aux
+                w_saida-vrkme
+                var_netwr_aux
+                w_saida-aubel INTO w_csv SEPARATED BY ';'.
+    APPEND w_csv TO t_csv.
+  ENDLOOP.
+
+  v_arquivo = 'C:\Users\Vitor Ueda\Downloads\ArquivoEx01.csv'.
+
+  CALL FUNCTION 'GUI_DOWNLOAD'
+    EXPORTING
+      filename                = v_arquivo
+      filetype                = 'ASC'
+    TABLES
+      data_tab                = t_csv
+    EXCEPTIONS
+      file_write_error        = 1
+      no_batch                = 2
+      gui_refuse_filetransfer = 3
+      invalid_type            = 4
+      no_authority            = 5
+      unknown_error           = 6
+      header_not_allowed      = 7
+      separator_not_allowed   = 8
+      filesize_not_allowed    = 9
+      header_too_long         = 10
+      dp_error_create         = 11
+      dp_error_send           = 12
+      dp_error_write          = 13
+      unknown_dp_error        = 14
+      access_denied           = 15
+      dp_out_of_memory        = 16
+      disk_full               = 17
+      dp_timeout              = 18
+      file_not_found          = 19
+      dataprovider_exception  = 20
+      control_flush_error     = 21
+      OTHERS                  = 22.
+  IF sy-subrc EQ 0.
+    MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+    WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+  ENDIF.
+
+  MESSAGE s208(00) WITH 'ARQUIVO CSV EXPORTADO COM SUCESSO'.
+
+ENDFORM.
+
+FORM botao_registrar.
+
+  TYPES: BEGIN OF ty_tab_aux,
+          vbeln TYPE vbrk-vbeln,
+          posnr TYPE vbrp-posnr,
+         END OF ty_tab_aux.
+
+  DATA: t_tab_aux TYPE TABLE OF ty_tab_aux,
+        w_tab TYPE zch_tab_exe03,
+        linha TYPE sy-tabix.
+
+  SELECT vbeln
+         posnr
+    FROM zch_tab_exe03
+    INTO TABLE t_tab_aux
+    FOR ALL ENTRIES IN t_saida
+    WHERE vbeln EQ t_saida-vbeln
+      AND posnr EQ t_saida-posnr.
+
+  IF sy-subrc EQ 0.
+    SORT t_tab_aux BY vbeln posnr.
+  ENDIF.
+
+  LOOP AT t_saida INTO w_saida.
+
+    linha = sy-tabix.
+
+    READ TABLE t_tab_aux TRANSPORTING NO FIELDS WITH KEY vbeln = w_saida-vbeln
+                                                         posnr = w_saida-posnr
+                                                         BINARY SEARCH.
+    IF sy-subrc EQ 0.
+      w_saida-status = '@0A@'.
+    ELSE.
+      w_saida-status = '@08@'.
+    ENDIF.
+
+    MODIFY t_saida FROM w_saida INDEX linha.
+
+    w_tab-vbeln = w_saida-vbeln.
+    w_tab-posnr = w_saida-posnr.
+    w_tab-kunrg_e_name1 = w_saida-kunrg_e_name1.
+    w_tab-fkdat = w_saida-fkdat.
+    w_tab-matnr_e_maktx = w_saida-matnr_e_maktx.
+    w_tab-fkimg = w_saida-fkimg.
+    w_tab-vrkme = w_saida-vrkme.
+    w_tab-netwr = w_saida-netwr.
+    w_tab-aubel = w_saida-aubel.
+    MODIFY zch_tab_exe03 FROM w_tab.
+
+  ENDLOOP.
+
+  MESSAGE s208(00) WITH 'Registro gravado com suceeso'.
+ENDFORM.
+
+
+FORM criacao_botoes USING rt_extab TYPE slis_t_extab.
+
+  SET PF-STATUS 'CRIACAO_BOTOES'.
+
+ENDFORM.
+
+FORM executa_alv.
+
+  w_layout-coltab_fieldname = 'CELLCOLOR'.
+  w_layout-zebra = 'X'.
+
+
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+      i_callback_program       = sy-repid
+      i_callback_user_command  = 'USER_COMMAND'
+      i_callback_pf_status_set = 'CRIACAO_BOTOES'
+      i_callback_top_of_page   = 'TOP_OF_PAGE'
+      it_fieldcat              = t_fieldcat
+      is_layout                = w_layout
+      it_sort                  = t_sort
+    TABLES
+      t_outtab                 = t_saida
+    EXCEPTIONS
+      program_error            = 1
+      OTHERS                   = 2.
+
+ENDFORM.
+
+FORM preencher_tabela_sort.
+
+  w_sort-spos = 1.
+  w_sort-fieldname = 'KUNRG_E_NAME1'.
+  w_sort-tabname = 'T_SAIDA'.
+  w_sort-up = 'X'.
+  APPEND w_sort TO t_sort.
+  CLEAR w_sort.
+
+  w_sort-spos = 2.
+  w_sort-fieldname = 'FKDAT'.
+  w_sort-tabname = 'T_SAIDA'.
+  w_sort-up = 'X'.
+  APPEND w_sort TO t_sort.
+  CLEAR w_sort.
+
+  "w_sort-fieldname = 'FKIMG'.   "SOMATÓRIA SUBTOTAL"
+  "w_sort-up = 'X'.
+  "w_sort-subtot = 'X'.
+  "APPEND w_sort TO t_sort.
+  "CLEAR w_sort.
+
+  "w_sort-fieldname = 'NETWR'.
+  "w_sort-up = 'X'.
+  "w_sort-subtot = 'X'.
+  "APPEND w_sort TO t_sort.
+  "CLEAR w_sort.
+
+ENDFORM.

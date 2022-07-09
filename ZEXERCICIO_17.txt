@@ -1,0 +1,22 @@
+REPORT ZEXERCICIO_17.
+
+PARAMETER: p_base TYPE p DECIMALS 2,
+           p_expo TYPE i.
+
+
+PERFORM calcular.
+
+
+FORM calcular.
+
+  DATA: contador TYPE i VALUE 1,
+        resultado TYPE p DECIMALS 2.
+
+  WHILE contador < p_expo.
+    resultado = ( p_base * p_base ) + resultado.
+    ADD 1 TO contador.
+  ENDWHILE.
+
+WRITE: resultado.
+
+ENDFORM.

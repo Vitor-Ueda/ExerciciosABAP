@@ -1,0 +1,45 @@
+REPORT zexercicio_12.
+
+TYPES: BEGIN OF ty_cadastro,
+        n_cliente TYPE i,
+        valor_conta_cliente TYPE p DECIMALS 2,
+        telefone(15) TYPE c,
+        nome_cliente TYPE string,
+       END OF ty_cadastro.
+
+PERFORM cadastro_cliente.
+
+FORM cadastro_cliente.
+  DATA: ti_cadastros TYPE TABLE OF ty_cadastro,
+        wa_cadastros TYPE ty_cadastro,
+        cont_vazio TYPE i.
+
+  wa_cadastros-n_cliente = 1.
+  wa_cadastros-valor_conta_cliente = '70.000'.
+  wa_cadastros-telefone = ''.
+  wa_cadastros-nome_cliente = ''.
+  APPEND wa_cadastros TO ti_cadastros.
+
+  LOOP AT ti_cadastros INTO wa_cadastros.
+
+     IF wa_cadastros-n_cliente EQ 0.
+       ADD 1 TO cont_vazio.
+     ENDIF.
+     IF wa_cadastros-valor_conta_cliente EQ ''.
+       ADD 1 TO cont_vazio.
+     ENDIF.
+     IF wa_cadastros-telefone EQ ''.
+       ADD 1 TO cont_vazio.
+     ENDIF.
+     IF wa_cadastros-nome_cliente EQ ''.
+       ADD 1 TO cont_vazio.
+     ENDIF.
+
+    WRITE: wa_cadastros-n_cliente,'|', wa_cadastros-valor_conta_cliente,'|', wa_cadastros-telefone,'|', wa_cadastros-nome_cliente,'|', sy-uline.
+  ENDLOOP.
+
+  SKIP.
+
+  WRITE:'A quantidade de campos vazios é:', cont_vazio.
+
+ENDFOR

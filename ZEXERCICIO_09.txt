@@ -1,0 +1,18 @@
+REPORT zexercicio_09.
+
+DATA: result1 TYPE FLAG VALUE ' ',
+      result2 TYPE FLAG VALUE 'X'.
+
+PARAMETER: p_valor1 TYPE p DECIMALS 2,
+           p_valor2 TYPE p DECIMALS 2.
+
+PERFORM return_flag.
+
+FORM return_flag.
+
+  IF p_valor1 < p_valor2 OR p_valor1 > p_valor2.
+    WRITE:result1.
+  ELSE.
+    WRITE:result2.
+  ENDIF.
+ENDFORM.

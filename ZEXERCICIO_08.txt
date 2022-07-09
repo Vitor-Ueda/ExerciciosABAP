@@ -1,0 +1,18 @@
+REPORT zexercicio_08.
+
+PARAMETER: p_valor1 TYPE i,
+           p_valor2 TYPE i.
+
+PERFORM recebe_valor.
+
+FORM recebe_valor.
+  IF p_valor1 < p_valor2.
+    WRITE:'O primeiro valor', p_valor1, 'é menor que o segundo valor', p_valor2.
+  ENDIF.
+  IF p_valor1 > p_valor2.
+    WRITE:'O primeiro valor', p_valor1, 'é maior que o segundo valor', p_valor2.
+  ENDIF.
+  IF p_valor1 EQ p_valor2.
+    WRITE:'Ambos valores são iguais'.
+  ENDIF.
+ENDFORM.

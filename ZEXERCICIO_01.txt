@@ -1,0 +1,9 @@
+REPORT ZEXERCICIO_01.
+
+DATA: palavra1(5) TYPE c,
+      palavra2(5) TYPE c.
+
+palavra1 = 'Hello'.
+palavra2 = 'World'.
+
+WRITE: palavra1, palavra2.

@@ -1,0 +1,19 @@
+REPORT zexercicio_07.
+
+DATA: valor1 TYPE i VALUE 3,
+      valor2 TYPE i VALUE 6,
+      valor3 TYPE i VALUE 9,
+      valor4 TYPE i VALUE 12,
+      valor_soma TYPE i.
+
+PERFORM x USING valor1 valor2 CHANGING valor3 valor4 valor_soma.
+
+"USING sendo valores utilizados e CHANGING valores que serão modificados.
+FORM x USING valor1 valor2 CHANGING valor3 valor4 valor_soma.
+
+  valor_soma = valor1 + valor4.
+
+  WRITE:'Variaveis Using:', valor1, valor2, /.
+  WRITE:'Variaveis Changing:', valor3, valor4, /.
+  WRITE:'Soma dos valores:', valor_soma, /.
+ENDFORM.

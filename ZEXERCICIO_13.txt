@@ -1,0 +1,55 @@
+REPORT zexercicio_13.
+
+TYPES: BEGIN OF ty_calculo,
+        nome_cliente TYPE string,
+        e_janeiro TYPE p DECIMALS 2,
+        e_fevereiro TYPE p DECIMALS 2,
+        e_marco TYPE p DECIMALS 2,
+        e_abril TYPE p DECIMALS 2,
+       END OF ty_calculo.
+
+PERFORM ch_funcao1.
+
+FORM ch_funcao1.
+
+  DATA: ti_calculo TYPE TABLE OF ty_calculo,
+        wa_calculo TYPE ty_calculo,
+        calculo_entrada_conta TYPE p DECIMALS 2,
+        campos_vazio TYPE i.
+
+  wa_calculo-nome_cliente = 'Frederico Carlos'.
+  wa_calculo-e_janeiro = '1200.00'.
+  wa_calculo-e_fevereiro = '4000.00'.
+  wa_calculo-e_marco = ''.
+  wa_calculo-e_abril = ''.
+  APPEND wa_calculo TO ti_calculo.
+
+  LOOP AT ti_calculo INTO wa_calculo.
+    IF wa_calculo-nome_cliente EQ ''.
+      ADD 1 TO campos_vazio.
+    ENDIF.
+    IF wa_calculo-e_janeiro EQ ''.
+      ADD 1 TO campos_vazio.
+    ENDIF.
+    IF wa_calculo-e_fevereiro EQ ''.
+      ADD 1 TO campos_vazio.
+    ENDIF.
+    IF wa_calculo-e_marco EQ ''.
+      ADD 1 TO campos_vazio.
+    ENDIF.
+    IF wa_calculo-e_abril EQ ''.
+      ADD 1 TO campos_vazio.
+    ENDIF.
+
+    WRITE: wa_calculo-nome_cliente,'|', wa_calculo-e_janeiro,'|', wa_calculo-e_fevereiro,'|', wa_calculo-e_marco,'|', wa_calculo-e_abril,'|'.
+  ENDLOOP.
+
+  calculo_entrada_conta = wa_calculo-e_janeiro +
+                          wa_calculo-e_fevereiro +
+                          wa_calculo-e_marco +
+                          wa_calculo-e_abril.
+
+  SKIP.
+
+  WRITE: 'O total de campos vazios é:', campos_vazio, / , 'O total de entrada nos meses é: R$', calculo_entrada_conta.
+ENDFORM.

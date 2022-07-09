@@ -1,0 +1,543 @@
+REPORT zexercicios_relatorio_01 LINE-SIZE 239.
+
+TABLES: mkpf, mseg, t001w, t001l.
+
+
+*---------------------- DECLARAÇÃO DE ESTRUTURAS -------------------------*
+TYPES:  BEGIN OF ty_mkpf,
+          mblnr TYPE mkpf-mblnr,
+          mjahr TYPE mkpf-mjahr,
+          bldat TYPE mkpf-bldat,
+        END OF ty_mkpf,
+
+        BEGIN OF ty_mseg,
+          mblnr TYPE mseg-mblnr,
+          mjahr TYPE mseg-mjahr,
+          zeile TYPE mseg-zeile,
+          bwart TYPE mseg-bwart,
+          matnr TYPE mseg-matnr,
+          werks TYPE mseg-werks,
+          lgort TYPE mseg-lgort,
+          dmbtr TYPE mseg-dmbtr,
+          menge TYPE mseg-menge,
+          meins TYPE mseg-meins,
+        END OF ty_mseg,
+
+        BEGIN OF ty_makt,
+          matnr TYPE makt-matnr,
+          maktx TYPE makt-maktx,
+        END OF ty_makt,
+
+        BEGIN OF ty_t001w,
+          werks TYPE t001w-werks,
+          name1 TYPE t001w-name1,
+        END OF ty_t001w,
+
+        BEGIN OF ty_t001l,
+          werks TYPE t001l-werks,
+          lgort TYPE t001l-lgort,
+          lgobe TYPE t001l-lgobe,
+        END OF ty_t001l,
+
+        BEGIN OF ty_saida,
+          mblnr TYPE mkpf-mblnr,
+          mjahr TYPE mkpf-mjahr,
+          zeile TYPE mseg-zeile,
+          bwart TYPE mseg-bwart,
+          bldat TYPE mkpf-bldat,
+          matnr_e_maktx(85) TYPE c,
+          werks_e_name1(85) TYPE c,
+          lgort_e_lgobe(85) TYPE c,
+          menge TYPE mseg-menge,
+          meins TYPE mseg-meins,
+          calculo TYPE p DECIMALS 3,
+          dmbtr TYPE mseg-dmbtr,
+        END OF ty_saida.
+
+
+*---------------------- DECLARAÇÃO DO TIPO STANDARD ------------------------*
+TYPE-POOLS slis.
+
+
+*--------------------- DECLARAÇÃO DE TABELAS INTERNAS ----------------------*
+"DECLARAÇÃO DAS TABELAS INTERNAS DO TIPO DAS ESTRUTURAS"
+DATA: t_mkpf TYPE TABLE OF ty_mkpf,
+      t_mseg TYPE TABLE OF ty_mseg,
+      t_makt TYPE TABLE OF ty_makt,
+      t_t001w TYPE TABLE OF ty_t001w,
+      t_t001l TYPE TABLE OF ty_t001l,
+      t_saida TYPE TABLE OF ty_saida.
+
+
+*---------------------- DECLARAÇÃO DE WORKAREAS ----------------------------*
+"DECLARAÇÃO DAS WORKAREAS DO TIPO DAS ESTRUTURAS"
+DATA: w_mkpf TYPE ty_mkpf,
+      w_mseg TYPE ty_mseg,
+      w_makt TYPE ty_makt,
+      w_t001w TYPE ty_t001w,
+      w_t001l TYPE ty_t001l,
+      w_saida TYPE ty_saida.
+
+
+*------------------ DECLARAÇÃO DE TABELAS INTERNAS ALV ---------------------*
+DATA: t_listheader TYPE TABLE OF slis_listheader,
+      t_fieldcat TYPE TABLE OF slis_fieldcat_alv,
+      t_layout TYPE TABLE OF slis_layout_alv,
+      t_sort TYPE slis_t_sortinfo_alv.
+
+
+*--------------------- DECLARAÇÃO DE WORKAREAS ALV -------------------------*
+DATA: wa_listheader TYPE slis_listheader,    "CABEÇALHO"
+      wa_fieldcat TYPE slis_fieldcat_alv,    "CATÁLOGO DE CAMPOS"
+      wa_sort TYPE slis_sortinfo_alv,     "ORDENAÇÃO E QUEBRAS"
+      wa_layout TYPE slis_layout_alv,        "LAYOUT PARA SAÍDA"
+      wa_print TYPE slis_print_alv.          "CONTROLE DE IMPRESSÃO"
+
+
+*--------------------- DECLARAÇÃO DE TABELAS E WORKAREA PARA ARQUIVO TXT -------------------------*
+TYPES: truxs_t_text_data(4096) TYPE c OCCURS 0.
+
+DATA: t_txt TYPE truxs_t_text_data,
+      w_txt LIKE LINE OF t_txt,
+      v_arquivo TYPE string.
+
+
+*---------------------------- TELA DE SELEÇÃO ------------------------------*
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE text-001.
+
+PARAMETER: p_mjahr TYPE mkpf-mjahr.
+SELECT-OPTIONS s_mblnr FOR mkpf-mblnr.
+SELECT-OPTIONS s_bwart FOR mseg-bwart.
+
+SELECTION-SCREEN END OF BLOCK b1.
+
+
+"PERFORMS"
+*#################### 1 CHAMA FUNÇÃO SELECIONA DADOS #######################*
+PERFORM selecionar_dados_tabelas.
+
+*################## 2 CHAMA FUNÇÃO DE SAÍDA DE DADOS #######################*
+PERFORM monta_saida_tabela.
+
+*####################### 3 MONTA TABELA ALV ################################*
+PERFORM monta_tabela_alv.
+
+*####################### EXECUTA A QUEBRA E A SOMATORIA DOS CAMPOS ################################*
+PERFORM quebra_e_soma_campos.
+
+*######################### 4 EXECUTA O ALV #################################*
+PERFORM executa_funcao_alv.
+
+
+
+*===========================================================================================================================*
+"ROTINAS FORMS"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*########################### 1 SELECIONA DADOS #############################*
+FORM selecionar_dados_tabelas.
+  "SELEÇÃO DE TABELAS"
+  "SELEÇÃO DOS CAMPOS(informando no select) DA TABELA TRANSPARENTE(informada no from)"
+  "E JOGANDO SUAS INFORMAÇÕES PARA A TABELA INTERNA(informada no into table)"
+  "WHERE INFORMANDO SOBRE O CAMPO PARAMETER E SELECT-OPTION"
+
+  SELECT mblnr mjahr bldat
+    FROM mkpf
+    INTO TABLE t_mkpf
+    WHERE mblnr IN s_mblnr AND mjahr = p_mjahr. "AND bldat = 'WL'."
+
+  SELECT mblnr mjahr zeile bwart matnr werks lgort dmbtr menge meins
+    FROM mseg
+    INTO TABLE t_mseg
+    FOR ALL ENTRIES IN t_mkpf
+    WHERE mblnr = t_mkpf-mblnr AND mjahr = t_mkpf-mjahr AND bwart IN s_bwart.
+
+  SELECT matnr maktx
+    FROM makt
+    INTO TABLE t_makt
+    FOR ALL ENTRIES IN t_mseg
+    WHERE matnr = t_mseg-matnr AND spras = sy-langu.
+
+  SELECT werks name1
+    FROM t001w
+    INTO TABLE t_t001w
+    FOR ALL ENTRIES IN t_mseg
+    WHERE werks = t_mseg-werks.
+
+  SELECT werks lgort lgobe
+    FROM t001l
+    INTO TABLE t_t001l
+    FOR ALL ENTRIES IN t_mseg
+    WHERE werks = t_mseg-werks AND lgort = t_mseg-lgort.
+
+ENDFORM.
+
+
+*######################## 2 FUNÇÃO SAÍDA DE DADOS ##########################*
+"LOOP PARA PASSAR TUDO QUE TEM NA LINHA DA TABELA INTERNA PARA UMA WORKAREA, ASSIM IMPRIMINDO O QUE ESTÁ NA WORKAREA"
+FORM monta_saida_tabela.
+
+  LOOP AT t_mseg INTO w_mseg.
+
+    READ TABLE t_mkpf INTO w_mkpf WITH KEY mblnr = w_mseg-mblnr mjahr = w_mseg-mjahr.
+    IF sy-subrc EQ 0.
+      READ TABLE t_makt INTO w_makt WITH KEY matnr = w_mseg-matnr.
+      IF sy-subrc EQ 0.
+        READ TABLE t_t001w INTO w_t001w WITH KEY werks = w_mseg-werks.
+        READ TABLE t_t001l INTO w_t001l WITH KEY werks = w_mseg-werks lgort = w_mseg-lgort.
+        IF sy-subrc EQ 0.
+
+          w_saida-mblnr = w_mkpf-mblnr.
+          w_saida-mjahr = w_mseg-mjahr.
+          w_saida-zeile = w_mseg-zeile.
+          w_saida-bwart = w_mseg-bwart.
+          w_saida-bldat = w_mkpf-bldat.
+          CONCATENATE w_mseg-matnr w_makt-maktx INTO w_saida-matnr_e_maktx SEPARATED BY '-'.
+          CONCATENATE w_mseg-werks w_t001w-name1 INTO w_saida-werks_e_name1 SEPARATED BY '-'.
+          CONCATENATE w_mseg-lgort w_t001l-lgobe INTO w_saida-lgort_e_lgobe SEPARATED BY '-'.
+          w_saida-menge = w_mseg-menge.
+          w_saida-meins = w_mseg-meins.
+          w_saida-dmbtr = w_mseg-dmbtr.
+          w_saida-calculo = w_saida-calculo.
+          APPEND w_saida TO t_saida.
+        ENDIF.
+      ENDIF.
+    ENDIF.
+  ENDLOOP.
+
+  w_saida-mblnr = '5000000000'.
+  w_saida-mjahr = '2021'.
+  w_saida-zeile = '0001'.
+  w_saida-bwart = '101'.
+  w_saida-bldat = '11.11.2021'.
+  w_saida-matnr_e_maktx = 'DDC-ROH-01 - Máteria-prima 01'.
+  w_saida-werks_e_name1 = 'Outros dados'.
+  w_saida-lgort_e_lgobe = 'Outros dados'.
+  w_saida-menge = 200.
+  w_saida-meins = 33.
+  w_saida-dmbtr = '230.00'.
+  w_saida-calculo = w_saida-calculo.
+  APPEND w_saida TO t_saida.
+
+  LOOP AT t_saida INTO w_saida.
+
+    w_saida-calculo = w_saida-dmbtr / w_saida-menge.
+
+    MODIFY t_saida FROM w_saida.
+  ENDLOOP.
+ENDFORM.
+
+
+*########################## 3 MONTA TABELA ALV #############################*
+FORM monta_tabela_alv.
+
+  wa_fieldcat-hotspot = 'X'.
+  wa_fieldcat-fieldname = 'MBLNR'.
+  wa_fieldcat-tabname = 'T_SAIDA'.
+  wa_fieldcat-ref_fieldname = 'MBLNR'.
+  wa_fieldcat-ref_tabname = 'MKPF'.
+  APPEND wa_fieldcat TO t_fieldcat.
+  CLEAR wa_fieldcat.
+
+  wa_fieldcat-fieldname = 'MJAHR'.
+  wa_fieldcat-tabname = 'T_SAIDA'.
+  wa_fieldcat-ref_fieldname = 'MJAHR'.
+  wa_fieldcat-ref_tabname = 'MKPF'.
+  APPEND wa_fieldcat TO t_fieldcat.
+  CLEAR wa_fieldcat.
+
+  wa_fieldcat-fieldname = 'ZEILE'.
+  wa_fieldcat-tabname = 'T_SAIDA'.
+  wa_fieldcat-ref_fieldname = 'ZEILE'.
+  wa_fieldcat-ref_tabname = 'MSEG'.
+  APPEND wa_fieldcat TO t_fieldcat.
+  CLEAR wa_fieldcat.
+
+  wa_fieldcat-fieldname = 'BWART'.
+  wa_fieldcat-tabname = 'T_SAIDA'.
+  wa_fieldcat-ref_fieldname = 'BWART'.
+  wa_fieldcat-ref_tabname = 'MSEG'.
+  APPEND wa_fieldcat TO t_fieldcat.
+  CLEAR wa_fieldcat.
+
+  wa_fieldcat-fieldname = 'BLDAT'.
+  wa_fieldcat-tabname = 'T_SAIDA'.
+  wa_fieldcat-ref_fieldname = 'BLDAT'.
+  wa_fieldcat-ref_tabname = 'MKPF'.
+  APPEND wa_fieldcat TO t_fieldcat.
+  CLEAR wa_fieldcat.
+
+  wa_fieldcat-seltext_l = 'Number Mat. Desc.'.
+  wa_fieldcat-fieldname = 'MATNR_E_MAKTX'.
+  wa_fieldcat-tabname = 'T_SAIDA'.
+  wa_fieldcat-ref_fieldname = 'MATNR_E_MAKTX'.
+  wa_fieldcat-ref_tabname = 'T_SAIDA'.
+  APPEND wa_fieldcat TO t_fieldcat.
+  CLEAR wa_fieldcat.
+
+  wa_fieldcat-seltext_l = 'Name Plant'.
+  wa_fieldcat-fieldname = 'WERKS_E_NAME1'.
+  wa_fieldcat-tabname = 'T_SAIDA'.
+  wa_fieldcat-ref_fieldname = 'WERKS_E_NAME1'.
+  wa_fieldcat-ref_tabname = 'T_SAIDA'.
+  APPEND wa_fieldcat TO t_fieldcat.
+  CLEAR wa_fieldcat.
+
+  wa_fieldcat-seltext_l = 'Storage Location Des.'.
+  wa_fieldcat-fieldname = 'LGORT_E_LGOBE'.
+  wa_fieldcat-tabname = 'T_SAIDA'.
+  wa_fieldcat-ref_fieldname = 'LGORT_E_LGOBE'.
+  wa_fieldcat-ref_tabname = 'T_SAIDA'.
+  APPEND wa_fieldcat TO t_fieldcat.
+  CLEAR wa_fieldcat.
+
+  wa_fieldcat-do_sum = 'X'.
+  wa_fieldcat-fieldname = 'MENGE'.
+  wa_fieldcat-tabname = 'T_SAIDA'.
+  wa_fieldcat-ref_fieldname = 'MENGE'.
+  wa_fieldcat-ref_tabname = 'MSEG'.
+  APPEND wa_fieldcat TO t_fieldcat.
+  CLEAR wa_fieldcat.
+
+  wa_fieldcat-fieldname = 'MEINS'.
+  wa_fieldcat-tabname = 'T_SAIDA'.
+  wa_fieldcat-ref_fieldname = 'MEINS'.
+  wa_fieldcat-ref_tabname = 'MSEG'.
+  APPEND wa_fieldcat TO t_fieldcat.
+  CLEAR wa_fieldcat.
+
+  wa_fieldcat-do_sum = 'X'.
+  wa_fieldcat-fieldname = 'DMBTR'.
+  wa_fieldcat-tabname = 'T_SAIDA'.
+  wa_fieldcat-ref_fieldname = 'DMBTR'.
+  wa_fieldcat-ref_tabname = 'MSEG'.
+  APPEND wa_fieldcat TO t_fieldcat.
+  CLEAR wa_fieldcat.
+
+  wa_fieldcat-do_sum = 'X'.
+  wa_fieldcat-seltext_l = 'Price Unit'.
+  wa_fieldcat-fieldname = 'CALCULO'.
+  wa_fieldcat-tabname = 'T_SAIDA'.
+  wa_fieldcat-ref_fieldname = 'CALCULO'.
+  wa_fieldcat-ref_tabname = 'MSEG'.
+  APPEND wa_fieldcat TO t_fieldcat.
+  CLEAR wa_fieldcat.
+
+ENDFORM.
+
+
+*############################# 4 EXECUTA O ALV #############################*
+FORM executa_funcao_alv.
+
+  wa_layout-zebra = 'X'.
+
+
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+      i_callback_program       = sy-repid
+      i_callback_pf_status_set = 'CRIACAO_BOTOES'
+      i_callback_user_command  = 'USER_COMMAND'
+      i_callback_top_of_page   = 'TOP_OF_PAGE'
+      it_fieldcat              = t_fieldcat
+      is_layout                = wa_layout
+      it_sort                  = t_sort
+    TABLES
+      t_outtab                 = t_saida
+    EXCEPTIONS
+      program_error            = 1
+      OTHERS                   = 2.
+
+ENDFORM.
+
+
+
+*############################# CABEÇALHO ##################################*
+FORM top_of_page.
+
+  DATA: hora(10) TYPE c,
+        DATA(10) TYPE c.
+
+  WRITE: sy-datum USING EDIT MASK ' __/__/____' TO data.
+  WRITE: sy-uzeit USING EDIT MASK ' __:__:__' TO hora.
+
+  CLEAR t_listheader[].
+  CLEAR wa_listheader.
+
+  wa_listheader-typ = 'H'.
+  wa_listheader-info = 'Relatório Relatório de Movimentação de Material'.
+  APPEND wa_listheader TO t_listheader.
+
+  wa_listheader-typ = 'S'.
+  wa_listheader-info = 'DATA: ' && data.
+  APPEND wa_listheader TO t_listheader.
+
+  wa_listheader-info = space.
+  APPEND wa_listheader TO t_listheader.
+
+  wa_listheader-typ = 'S'.
+  wa_listheader-info = 'HORA: ' && hora.
+  APPEND wa_listheader TO t_listheader.
+
+  CALL FUNCTION 'REUSE_ALV_COMMENTARY_WRITE'
+    EXPORTING
+      it_list_commentary = t_listheader.
+ENDFORM.
+
+
+
+
+
+
+*############################# EXECUTA FUNÇÃO QUEBRAR CAMPOS E SOMATORIA #############################*
+FORM quebra_e_soma_campos.
+
+  wa_sort-spos = 1.
+  wa_sort-fieldname = 'BWART'.
+  wa_sort-tabname = 'T_SAIDA'.
+  wa_sort-up = 'X'.
+  APPEND wa_sort TO t_sort.
+  CLEAR wa_sort.
+
+  wa_sort-spos = 2.
+  wa_sort-fieldname = 'BLDAT'.
+  wa_sort-tabname = 'T_SAIDA'.
+  wa_sort-up = 'X'.
+  APPEND wa_sort TO t_sort.
+  CLEAR wa_sort.
+
+ENDFORM.
+
+
+
+
+*############################## HOTSPOT E BOTOES ###################################*
+FORM user_command USING r_ucomm LIKE sy-ucomm        "PADRÃO"
+     rs_selfield TYPE slis_selfield.
+
+  CASE r_ucomm.
+    WHEN '&IC1'.
+      IF rs_selfield-fieldname = 'MBLNR'.
+
+        SET PARAMETER ID 'MBN' FIELD rs_selfield-value.
+
+        CLEAR w_saida.
+
+        READ TABLE t_saida INTO w_saida INDEX rs_selfield-tabindex.
+        SET PARAMETER ID 'MJA' FIELD w_saida-mjahr.
+
+        CALL TRANSACTION 'MB03' AND SKIP FIRST SCREEN. "FORMA DE CHAMAR OUTRA TELA/PROGRAMA DENTRO DO MEU PROGRAMA"
+      ENDIF.
+
+    WHEN 'CANCEL' OR 'EXIT'.
+      LEAVE PROGRAM.
+
+    WHEN 'ARQUIVOTXT'.
+      PERFORM botao_txt.
+
+    WHEN 'ARQUIVOCSV'.
+
+
+  ENDCASE.
+ENDFORM.
+
+
+
+
+
+*############################## CHAMADA BARRA BOTOES ###################################*
+FORM criacao_botoes USING rt_extab TYPE slis_t_extab.
+
+  SET PF-STATUS 'BOTOES CRIADOS'.
+
+ENDFORM.
+
+
+
+
+*############################# BOTÃO TXT #############################*
+FORM botao_txt.
+* CALL FUNCTION 'SAP_CONVERT_TO_TEXT_FORMAT'
+*    EXPORTING
+*      i_field_separator = 'I'
+*    TABLES
+*      i_tab_sap_data    = t_saida.
+
+  DATA: var_menge_aux(16) TYPE c,
+        var_dmbtr_aux(16) TYPE c,
+        var_calculo_aux(16) TYPE c.
+
+  var_menge_aux = w_saida-menge.
+  var_dmbtr_aux = w_saida-dmbtr.
+  var_calculo_aux = w_saida-calculo.
+
+
+  LOOP AT t_saida INTO w_saida.
+
+    CONCATENATE: w_saida-mblnr
+                 w_saida-mjahr
+                 w_saida-zeile
+                 w_saida-bwart
+                 w_saida-bldat
+                 w_saida-matnr_e_maktx
+                 w_saida-werks_e_name1
+                 w_saida-lgort_e_lgobe
+                 var_menge_aux
+                 w_saida-meins
+                 var_dmbtr_aux
+                 var_calculo_aux INTO w_txt SEPARATED BY ' ; '.
+
+    APPEND w_txt TO t_txt.
+  ENDLOOP.
+
+  v_arquivo = 'C:\Users\Vitor Ueda\Downloads\ArquivoEx01.txt'.
+  CALL FUNCTION 'GUI_DOWNLOAD'
+    EXPORTING
+      filename                = v_arquivo
+      filetype                = 'ASC'
+    TABLES
+      data_tab                = t_txt
+    EXCEPTIONS
+      file_write_error        = 1
+      no_batch                = 2
+      gui_refuse_filetransfer = 3
+      invalid_type            = 4
+      no_authority            = 5
+      unknown_error           = 6
+      header_not_allowed      = 7
+      separator_not_allowed   = 8
+      filesize_not_allowed    = 9
+      header_too_long         = 10
+      dp_error_create         = 11
+      dp_error_send           = 12
+      dp_error_write          = 13
+      unknown_dp_error        = 14
+      access_denied           = 15
+      dp_out_of_memory        = 16
+      disk_full               = 17
+      dp_timeout              = 18
+      file_not_found          = 19
+      dataprovider_exception  = 20
+      control_flush_error     = 21
+      OTHERS                  = 22.
+  IF sy-subrc EQ 0.
+    MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+    WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+  ENDIF.
+
+  MESSAGE s208(00) WITH 'ARQUIVO TXT EXPORTADO COM SUCESSO'.
+
+ENDFORM.
+"FIM ROTINAS FORMS"

@@ -1,0 +1,59 @@
+REPORT zexercicio_14.
+
+TYPES: BEGIN OF ty_controle_banco,
+        nome TYPE string,
+        endereco TYPE string,
+        cpf TYPE string,
+        idade TYPE i,
+        recebe_mensal TYPE p DECIMALS 2,
+        gasto_mensal TYPE p DECIMALS 2,
+       END OF ty_controle_banco.
+
+PERFORM ex_controle.
+
+FORM ex_controle.
+
+  DATA: wa_controle_banco TYPE ty_controle_banco,
+        soma_numerico TYPE p DECIMALS 2,
+        resto_div_num TYPE i,
+        cont_nome TYPE i,
+        cont_endereco TYPE i,
+        cont_cpf TYPE i,
+        soma_string TYPE i,
+        resto_div_string TYPE i.
+
+  wa_controle_banco-nome = 'Vitor Ueda'.
+  wa_controle_banco-endereco = 'Rua noroara, 381, bairro labate'.
+  wa_controle_banco-cpf = '47358931807'.
+  wa_controle_banco-idade = 18.
+  wa_controle_banco-recebe_mensal = '800.00'.
+  wa_controle_banco-gasto_mensal = '600.00'.
+
+  soma_numerico = wa_controle_banco-idade + wa_controle_banco-recebe_mensal + wa_controle_banco-gasto_mensal.
+
+  resto_div_num = soma_numerico MOD 2.
+  cont_nome = strlen( wa_controle_banco-nome ).
+  cont_endereco = strlen( wa_controle_banco-endereco ).
+  cont_cpf = strlen( wa_controle_banco-cpf ).
+  soma_string = cont_nome + cont_endereco + cont_cpf.
+  resto_div_string = soma_string MOD 2.
+
+  IF resto_div_num EQ 1.
+    wa_controle_banco-nome = ''.
+    wa_controle_banco-endereco = ''.
+    wa_controle_banco-cpf = ''.
+  ENDIF.
+
+  IF resto_div_string EQ 0.
+    wa_controle_banco-idade = 0.
+    wa_controle_banco-recebe_mensal = ''.
+    wa_controle_banco-gasto_mensal = ''.
+  ENDIF.
+
+  WRITE: wa_controle_banco-nome, '|',
+         wa_controle_banco-endereco, '|',
+         wa_controle_banco-cpf, '|',
+         wa_controle_banco-idade, '|',
+         wa_controle_banco-recebe_mensal, '|',
+         wa_controle_banco-gasto_mensal, '|'.
+ENDFORM.

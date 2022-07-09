@@ -1,0 +1,43 @@
+REPORT ZEXERCICIO_03.
+
+DATA: dia(2) TYPE c,
+      ano(4) TYPE c,
+      mes_numero(2) TYPE i,
+      mes_escrito(10) TYPE c,
+      result_conc(30) TYPE c.
+
+      dia = sy-datum+6(2).
+      mes_numero = sy-datum+4(2).
+      ano = sy-datum(4).
+
+CASE mes_numero.
+  WHEN '01'.
+    mes_escrito = 'Janeiro'.
+  WHEN '02'.
+    mes_escrito = 'Fevereiro'.
+  WHEN '03'.
+    mes_escrito = 'Março'.
+  WHEN '04'.
+    mes_escrito = 'Abril'.
+  WHEN '05'.
+    mes_escrito = 'Maio'.
+  WHEN '06'.
+    mes_escrito = 'Junho'.
+  WHEN '07'.
+    mes_escrito = 'Julho'.
+  WHEN '08'.
+    mes_escrito = 'Agosto'.
+  WHEN '09'.
+    mes_escrito = 'Setembro'.
+  WHEN '10'.
+    mes_escrito = 'Outubro'.
+  WHEN '11'.
+    mes_escrito = 'Novembro'.
+  WHEN '12'.
+    mes_escrito = 'Dezembro'.
+ENDCASE.
+
+
+CONCATENATE dia 'de' mes_escrito 'de' ano INTO result_conc SEPARATED BY space.
+
+WRITE result_conc.

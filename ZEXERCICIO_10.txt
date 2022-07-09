@@ -1,0 +1,24 @@
+REPORT ZEXERCICIO_10.
+
+DATA: result TYPE p DECIMALS 2.
+
+PARAMETER: p_valor1 TYPE p DECIMALS 2,
+           p_valor2 TYPE p DECIMALS 2.
+
+PERFORM op.
+
+FORM op.
+
+  IF p_valor1 < p_valor2.
+    result = p_valor2 / p_valor1.
+    WRITE:'O resultado do valor', p_valor2, '/', p_valor1, '=', result.
+  ENDIF.
+  IF p_valor1 > p_valor2.
+    result = p_valor1 / p_valor2.
+    WRITE:'O resultado do valor', p_valor1, '/', p_valor2, '=', result.
+  ENDIF.
+  IF p_valor1 EQ p_valor2.
+    result = p_valor1 * p_valor2.
+    WRITE: 'O resultado do valor', p_valor1, 'elevado a 2 é:', result.
+  ENDIF.
+ENDFORM.

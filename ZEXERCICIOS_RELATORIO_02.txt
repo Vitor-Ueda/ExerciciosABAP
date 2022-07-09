@@ -1,0 +1,461 @@
+
+REPORT zexercicios_relatorio_02.
+
+"ESTRUTURAS DE MKPF, MSEG, MAKT, T001W"
+TABLES: vbak, vbap, lips, kna1, makt, tgsbt.
+
+"INICIO DECLARAÇÕES DE ESTRUTURAS E WORKAREAS"
+"ESTRUTURAS"
+TYPES: BEGIN OF ty_vbak,
+        vbeln TYPE vbak-vbeln,
+        erdat TYPE vbak-erdat,
+        netwr TYPE vbak-netwr,
+        kunnr TYPE vbak-kunnr,
+       END OF ty_vbak,
+
+       BEGIN OF ty_vbap,
+         vbeln TYPE vbap-vbeln,
+         posnr TYPE vbap-posnr,
+         matnr TYPE vbap-matnr,
+         gsber TYPE vbap-gsber,
+       END OF ty_vbap,
+
+       BEGIN OF ty_lips,
+         vbeln TYPE lips-vbeln,
+         posnr TYPE lips-posnr,
+         vgbel TYPE lips-vgbel,
+         vgpos TYPE lips-vgpos,
+       END OF ty_lips,
+
+       BEGIN OF ty_kna1,
+         kunnr TYPE kna1-kunnr,
+         name1 TYPE kna1-name1,
+       END OF ty_kna1,
+
+       BEGIN OF ty_makt,
+         matnr TYPE makt-matnr,
+         maktx TYPE makt-maktx,
+       END OF ty_makt,
+
+       BEGIN OF ty_tgsbt,
+         gsber TYPE tgsbt-gsber,
+         gtext TYPE tgsbt-gtext,
+       END OF ty_tgsbt,
+
+       BEGIN OF ty_saida,
+         vbeln TYPE vbak-vbeln,
+         erdat TYPE vbak-erdat,
+         posnr TYPE vbap-posnr,
+         kunnr_e_name1(50) TYPE c,
+         netwr TYPE vbak-netwr,
+         matnr_e_maktx(60) TYPE c,
+         gsber_e_gtext(10) TYPE c,
+         vbeln1 TYPE lips-vbeln,
+         status(4) TYPE c,
+       END OF ty_saida.
+
+*-------------------------------- TABELAS INTERNAS ---------------------*
+DATA: ti_vbak TYPE TABLE OF ty_vbak,
+      ti_vbap TYPE TABLE OF ty_vbap,
+      ti_lips TYPE TABLE OF ty_lips,
+      ti_kna1 TYPE TABLE OF ty_kna1,
+      ti_makt TYPE TABLE OF ty_makt,
+      ti_tgsbt TYPE TABLE OF ty_tgsbt,
+      ti_saida TYPE TABLE OF ty_saida.
+
+
+*------------------------- WORKAREAS -------------------------*
+DATA: wa_vbak TYPE ty_vbak,
+      wa_vbap TYPE ty_vbap,
+      wa_lips TYPE ty_lips,
+      wa_kna1 TYPE ty_kna1,
+      wa_makt TYPE ty_makt,
+      wa_tgsbt TYPE ty_tgsbt,
+      wa_saida TYPE ty_saida.
+
+*------------------------- DECLARAÇÃO DE TABELAS ALV -----------------------*
+DATA: ti_listheader TYPE TABLE OF slis_listheader,
+      ti_fieldcat TYPE TABLE OF slis_fieldcat_alv,
+      ti_layout TYPE TABLE OF slis_layout_alv,     "NÃO NECESSÁRIO"
+      ti_sort TYPE slis_t_sortinfo_alv.
+
+*----------------------- DECLARAÇÃO WORKAREAS ALV --------------------------*
+DATA: wa_listheader TYPE slis_listheader,
+      wa_fieldcat TYPE slis_fieldcat_alv,
+      wa_layout TYPE slis_layout_alv,
+      wa_sort TYPE slis_sortinfo_alv.
+
+"FIM DAS DECLARAÇÕES"
+
+
+
+*-------------------------- TELA DE SELEÇÃO ------------------------------------*
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE text-001.
+"TELAS DE SELEÇÃO"
+SELECT-OPTIONS s_vbeln FOR vbak-vbeln.
+SELECT-OPTIONS s_erdat FOR vbak-erdat.
+SELECT-OPTIONS s_kunnr FOR vbak-kunnr.
+SELECTION-SCREEN END OF BLOCK b1.
+
+
+
+PERFORM: selecao_dados_tabelas,
+         passando_dados_tb_internas,
+         montando_dados_tabela_alv,
+         preencher_tabela_sort,                 "FUNÇÃO PARA QUEBRAR LINHA E INCLUIR CAMPO SOMATORIO"
+         executa_formatacao_alv.
+
+
+
+*############################ CABEÇALHO ALV #########################*
+FORM top_of_page.
+
+  DATA: DATA(10) TYPE c,
+        hora(10) TYPE c,
+        conc_info TYPE string.
+
+  WRITE: sy-datum USING EDIT MASK ' __/__/____' TO data.
+  WRITE: sy-uzeit USING EDIT MASK ' __:__:__' TO hora.
+
+  CLEAR ti_listheader.
+  CLEAR wa_listheader.
+
+  wa_listheader-typ = 'H'.
+  wa_listheader-info = 'Relátorio de Ordens de vendas em moeda EURO'.
+  APPEND wa_listheader TO ti_listheader.
+
+  wa_listheader-typ = 'S'.
+  wa_listheader-info = 'DATA: ' && data.
+  APPEND wa_listheader TO ti_listheader.
+
+  wa_listheader-info = space.
+  APPEND wa_listheader TO ti_listheader.
+
+  wa_listheader-typ = 'S'.
+  wa_listheader-info = 'HORA: ' && hora.
+  APPEND wa_listheader TO ti_listheader.
+
+  CALL FUNCTION 'REUSE_ALV_COMMENTARY_WRITE'
+    EXPORTING
+      it_list_commentary = ti_listheader.
+
+ENDFORM.
+
+
+*############################ QUEBRA CAMPOS E CAMPO SOMATORIA #########################*
+FORM preencher_tabela_sort.
+
+  wa_sort-spos = 1.
+  wa_sort-fieldname = 'ERDAT'.
+  wa_sort-up = 'X'.
+  APPEND wa_sort TO ti_sort.
+  CLEAR wa_sort.
+
+  wa_sort-spos = 2.
+  wa_sort-fieldname = 'KUNNR_E_NAME1'.
+  wa_sort-up = 'X'.
+  APPEND wa_sort TO ti_sort.
+  CLEAR wa_sort.
+
+  wa_sort-spos = 3.
+  wa_sort-fieldname = 'GSBER_E_GTEXT'.
+  wa_sort-up = 'X'.
+  APPEND wa_sort TO ti_sort.
+  CLEAR wa_sort.
+
+ENDFORM.
+
+*############################ EXECUTAR UMA TELA OU OUTRO PROGRAMA #########################*
+FORM user_command USING r_ucomm LIKE sy-ucomm rs_selfield TYPE slis_selfield.
+
+  CASE r_ucomm.
+    WHEN '&IC1'.
+      IF rs_selfield-fieldname = 'VBELN'.
+        SET PARAMETER ID 'AUN' FIELD rs_selfield-value.
+        CLEAR wa_saida.
+        READ TABLE ti_saida INTO wa_saida INDEX rs_selfield-tabindex.
+        CALL TRANSACTION 'VA03' AND SKIP FIRST SCREEN.
+      ENDIF.
+
+      IF rs_selfield-fieldname = 'VBELN'.
+        SET PARAMETER ID 'VL' FIELD rs_selfield-value.
+        CLEAR wa_saida.
+        READ TABLE ti_saida INTO wa_saida INDEX rs_selfield-tabindex.
+        CALL TRANSACTION 'VL03N' AND SKIP FIRST SCREEN.
+      ENDIF.
+
+    WHEN 'CANCEL' OR 'EXIT'.
+      LEAVE PROGRAM.
+
+    WHEN 'ARQUIVOTXT'.
+
+    WHEN 'ARQUIVOCSV'.
+
+  ENDCASE.
+ENDFORM.
+
+*############################ CHAMA BOTOES #########################*
+FORM criacao_botoes USING rt_extab TYPE slis_t_extab.
+
+  SET PF-STATUS 'BOTOES_CRIADOS'.
+
+ENDFORM.
+
+
+
+
+*############################## SELEÇÃO DE DADOS PLANILHA ###########################*
+FORM selecao_dados_tabelas.
+
+  "ESTRUTURAS DE SELEÇÃO"
+  SELECT vbeln erdat netwr kunnr
+    FROM vbak
+    INTO TABLE ti_vbak
+  WHERE vbeln IN s_vbeln AND erdat IN s_erdat AND kunnr IN s_kunnr. "AND auart = 'TA' AND waerk = 'EUR'."
+
+  SELECT vbeln posnr matnr gsber
+    FROM vbap
+    INTO TABLE ti_vbap
+    FOR ALL ENTRIES IN ti_vbak
+  WHERE vbeln = ti_vbak-vbeln.
+
+  SELECT vbeln posnr vgbel vgpos
+    FROM lips
+    INTO TABLE ti_lips
+    FOR ALL ENTRIES IN ti_vbap
+  WHERE  vbeln = ti_vbap-vbeln AND posnr = ti_vbap-posnr. "and pstyv = 'TAN'."
+  "VGPOS foi trocado por posnr pois falta informações".
+  "vgbel foi trocado por vbeln pois vbeln nao consta informações"
+
+  SELECT kunnr name1
+    FROM kna1
+    INTO TABLE ti_kna1
+    FOR ALL ENTRIES IN ti_vbak
+  WHERE kunnr = ti_vbak-kunnr.
+
+  SELECT matnr maktx
+    FROM makt
+    INTO TABLE ti_makt
+    FOR ALL ENTRIES IN ti_vbap
+  WHERE matnr = ti_vbap-matnr AND spras = sy-langu.
+
+  SELECT gsber gtext
+    FROM tgsbt
+    INTO TABLE ti_tgsbt
+    FOR ALL ENTRIES IN ti_vbap
+  WHERE gsber = ti_vbap-gsber AND spras EQ sy-langu.
+ENDFORM.
+
+
+*######################### PASSANDO OS DADOS PARA AS WORKAREAS #########################*
+FORM passando_dados_tb_internas.
+
+  LOOP AT ti_vbap INTO wa_vbap.
+    READ TABLE ti_vbak INTO wa_vbak WITH KEY vbeln = wa_vbap-vbeln.
+    IF sy-subrc EQ 0.
+      READ TABLE ti_kna1 INTO wa_kna1 WITH KEY kunnr = wa_vbak-kunnr.
+      IF sy-subrc EQ 0.
+        READ TABLE ti_lips INTO wa_lips WITH KEY vbeln = wa_vbap-vbeln vgpos = wa_vbap-posnr.
+        IF sy-subrc EQ 0.
+          READ TABLE ti_makt INTO wa_makt WITH KEY matnr = wa_vbap-matnr.
+          IF sy-subrc EQ 0.
+            READ TABLE ti_tgsbt INTO wa_tgsbt WITH KEY gsber = wa_vbap-gsber.
+
+            wa_saida-vbeln = wa_vbak-vbeln.
+            wa_saida-erdat = wa_vbak-erdat.
+            wa_saida-posnr = wa_lips-posnr.
+            CONCATENATE wa_kna1-kunnr wa_kna1-name1 INTO wa_saida-kunnr_e_name1 SEPARATED BY '-'.
+            wa_saida-netwr = wa_vbak-netwr.
+            CONCATENATE wa_vbap-matnr wa_makt-maktx INTO wa_saida-matnr_e_maktx SEPARATED BY '-'.
+            CONCATENATE wa_tgsbt-gsber wa_tgsbt-gtext INTO wa_saida-gsber_e_gtext SEPARATED BY '-'.
+            wa_saida-vbeln = wa_lips-vbeln.
+
+            IF wa_saida-netwr <= 20000.
+              wa_saida-status = '@10@'.
+            ENDIF.
+            IF wa_saida-netwr > 20000 AND wa_saida-netwr <= 40000.
+              wa_saida-status = '@09@'.
+            ENDIF.
+            IF wa_saida-netwr > 40000.
+              wa_saida-status = '@08@'.
+            ENDIF.
+
+            APPEND wa_saida TO ti_saida.
+
+          ENDIF.
+        ENDIF.
+      ENDIF.
+    ENDIF.
+  ENDLOOP.
+
+  wa_saida-vbeln = '0000000002'.
+  wa_saida-erdat = '06.06.2021'.
+  wa_saida-posnr = '000010'.
+  wa_saida-kunnr_e_name1 = '0000000001 - Vitor Ueda'.
+  wa_saida-netwr = 30000.
+  wa_saida-matnr_e_maktx = 'DDC-ROH-01 - Máteria-prima 01'.
+  wa_saida-gsber_e_gtext = 'PH00 - Philippines Business Area'.
+
+  IF wa_saida-netwr <= 20000.
+    wa_saida-status = '@0A@'.
+  ENDIF.
+  IF wa_saida-netwr > 20000 AND wa_saida-netwr <= 40000.
+    wa_saida-status = '@09@'.
+  ENDIF.
+  IF wa_saida-netwr > 40000.
+    wa_saida-status = '@08@'.
+  ENDIF.
+
+  APPEND wa_saida TO ti_saida.
+
+  wa_saida-vbeln = '0000000003'.
+  wa_saida-erdat = '10.10.2021'.
+  wa_saida-posnr = '000010'.
+  wa_saida-kunnr_e_name1 = '0000000001 - Vitor Ueda'.
+  wa_saida-netwr = 10000.
+  wa_saida-matnr_e_maktx = 'DDC-ROH-01 - Máteria-prima 01'.
+  wa_saida-gsber_e_gtext = 'PH00 - Philippines Business Area'.
+
+  IF wa_saida-netwr <= 20000.
+    wa_saida-status = '@0A@'.
+  ENDIF.
+  IF wa_saida-netwr > 20000 AND wa_saida-netwr <= 40000.
+    wa_saida-status = '@09@'.
+  ENDIF.
+  IF wa_saida-netwr > 40000.
+    wa_saida-status = '@08@'.
+  ENDIF.
+
+  APPEND wa_saida TO ti_saida.
+
+ENDFORM.
+
+
+*############################ COLOCANDO OS DADOS DENTRO DA TABELA ALV #########################*
+FORM montando_dados_tabela_alv.
+
+  wa_fieldcat-hotspot = 'X'.
+  wa_fieldcat-fieldname = 'VBELN'.
+  wa_fieldcat-tabname = 'T_SAIDA'.
+  wa_fieldcat-ref_fieldname = 'VBELN'.
+  wa_fieldcat-ref_tabname = 'VBAK'.
+  APPEND wa_fieldcat TO ti_fieldcat.
+  CLEAR wa_fieldcat.
+
+  wa_fieldcat-fieldname = 'ERDAT'.
+  wa_fieldcat-tabname = 'T_SAIDA'.
+  wa_fieldcat-ref_fieldname = 'ERDAT'.
+  wa_fieldcat-ref_tabname = 'VBAK'.
+  APPEND wa_fieldcat TO ti_fieldcat.
+  CLEAR wa_fieldcat.
+
+  wa_fieldcat-fieldname = 'POSNR'.
+  wa_fieldcat-tabname = 'T_SAIDA'.
+  wa_fieldcat-ref_fieldname = 'POSNR'.
+  wa_fieldcat-ref_tabname = 'VBAP'.
+  APPEND wa_fieldcat TO ti_fieldcat.
+  CLEAR wa_fieldcat.
+
+  wa_fieldcat-seltext_l = 'Sold to Party - Nomes'.
+  wa_fieldcat-fieldname = 'KUNNR_E_NAME1'.
+  wa_fieldcat-tabname = 'T_SAIDA'.
+  wa_fieldcat-ref_fieldname = 'KUNNR_E_NAME1'.
+  wa_fieldcat-ref_tabname = 'T_SAIDA'.
+  APPEND wa_fieldcat TO ti_fieldcat.
+  CLEAR wa_fieldcat.
+
+  wa_fieldcat-do_sum = 'X'.
+  wa_fieldcat-fieldname = 'NETWR'.
+  wa_fieldcat-tabname = 'T_SAIDA'.
+  wa_fieldcat-ref_fieldname = 'NETWR'.
+  wa_fieldcat-ref_tabname = 'VBAK'.
+  APPEND wa_fieldcat TO ti_fieldcat.
+  CLEAR wa_fieldcat.
+
+  wa_fieldcat-seltext_l = 'Num. Material e Desc.'.
+  wa_fieldcat-fieldname = 'MATNR_E_MAKTX'.
+  wa_fieldcat-tabname = 'T_SAIDA'.
+  wa_fieldcat-ref_fieldname = 'MATNR_E_MAKTX'.
+  wa_fieldcat-ref_tabname = 'T_SAIDA'.
+  APPEND wa_fieldcat TO ti_fieldcat.
+  CLEAR wa_fieldcat.
+
+  wa_fieldcat-seltext_l = 'Business Area - Desc.'.
+  wa_fieldcat-fieldname = 'GSBER_E_GTEXT'.
+  wa_fieldcat-tabname = 'T_SAIDA'.
+  wa_fieldcat-ref_fieldname = 'GSBER_E_GTEXT'.
+  wa_fieldcat-ref_tabname = 'T_SAIDA'.
+  APPEND wa_fieldcat TO ti_fieldcat.
+  CLEAR wa_fieldcat.
+
+  wa_fieldcat-hotspot = 'X'.
+  wa_fieldcat-fieldname = 'VBELN'.
+  wa_fieldcat-tabname = 'T_SAIDA'.
+  wa_fieldcat-ref_fieldname = 'VBELN'.
+  wa_fieldcat-ref_tabname = 'LIPS'.
+  APPEND wa_fieldcat TO ti_fieldcat.
+  CLEAR wa_fieldcat.
+
+  wa_fieldcat-seltext_l = 'Status'.
+  wa_fieldcat-fieldname = 'STATUS'.
+  wa_fieldcat-tabname = 'T_SAIDA'.
+  wa_fieldcat-ref_fieldname = 'STATUS'.
+  wa_fieldcat-ref_tabname = 'ICON_D'.
+  APPEND wa_fieldcat TO ti_fieldcat.
+  CLEAR wa_fieldcat.
+
+ENDFORM.
+
+*############################ EXECUTANDO O ALV #########################*
+FORM executa_formatacao_alv.
+
+  wa_layout-zebra = 'X'.
+
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+      i_callback_program      = sy-repid
+      i_callback_user_command = 'USER_COMMAND'
+      i_callback_pf_status_set = 'CRIACAO_BOTOES'
+      i_callback_top_of_page  = 'TOP_OF_PAGE'
+      it_fieldcat             = ti_fieldcat
+      is_layout               = wa_layout
+      it_sort                 = ti_sort
+    TABLES
+      t_outtab                = ti_saida
+    EXCEPTIONS
+      program_error           = 1
+      OTHERS                  = 2.
+
+ENDFORM.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"WRITE: '|', 'Sales Document', '|', 'Created on', '|', 'Item', '|', 'Sold-to party - Name', '|', 'Net value', '|',
+"     'Material - Description', '|', 'Business Area', '|', 'Sales Document', '|'.
+
+" LOOP AT ti_saida INTO wa_saida.
+"  WRITE: / wa_saida-vbeln, wa_saida-erdat, wa_saida-posnr, wa_saida-kunnr_e_name1, wa_saida-netwr,
+"wa_saida-matnr_e_maktx, wa_saida-gsber_e_gtext, wa_saida-vbeln1.
+"ENDLOOP.
+
+"WRITE: sy-uline.
